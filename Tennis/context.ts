@@ -3,6 +3,7 @@ export class Context {
   _2d: CanvasRenderingContext2D;
 
   constructor(canvas: Canvas) {
+    this.canvas = canvas.element;
     this._2d = canvas.element.getContext('2d');
   }
 };

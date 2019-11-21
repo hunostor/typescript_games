@@ -128,38 +128,46 @@ var Shape =
 /** @class */
 function () {
   function Shape(width, height, fill, ctx) {
-    this.x = 0;
-    this.y = 0;
-    this.speed = 0;
+    this.position = {
+      x: 0,
+      y: 0
+    };
     this.width = width;
     this.height = height;
     this.fill = fill;
     this.context = ctx;
   }
 
-  Shape.prototype.Positon = function (x, y) {
-    this.x = x;
-    this.y = y;
+  Shape.prototype.Positon = function (position) {
+    this.position.x = position.x;
+    this.position.y = position.y;
   };
 
-  Shape.prototype.Move = function (speedX, speedY) {
-    if (speedX === void 0) {
-      speedX = 0;
+  Shape.prototype.Move = function (speed) {
+    if (speed === void 0) {
+      speed = null;
     }
 
-    if (speedY === void 0) {
-      speedY = 0;
+    if (speed !== null) {
+      this.speed = speed;
     }
 
-    this.x = this.x + speedX;
-    this.y = this.y + speedY;
+    this.position.x = this.position.x + this.speed.SpeedX;
+    this.position.y = this.position.y + this.speed.SpeedY;
     this.Draw();
   };
 
   Shape.prototype.Draw = function () {
     this.context._2d.fillStyle = this.fill;
 
-    this.context._2d.fillRect(this.x, this.y, this.width, this.height);
+    this.context._2d.fillRect(this.position.x, this.position.y, this.width, this.height);
+  };
+
+  Shape.prototype.Reset = function () {
+    console.log("reset"); //this.Move(-this.position.x, -this.position.y)
+
+    this.position.x = this.context.canvas.width / 2;
+    this.position.y = this.context.canvas.height / 2;
   };
 
   return Shape;
@@ -177,6 +185,7 @@ var Context =
 /** @class */
 function () {
   function Context(canvas) {
+    this.canvas = canvas.element;
     this._2d = canvas.element.getContext('2d');
   }
 
@@ -250,7 +259,7 @@ function (_super) {
 
     this.context._2d.beginPath();
 
-    this.context._2d.arc(this.x, this.y, 10, 0, Math.PI * 2, true);
+    this.context._2d.arc(this.position.x, this.position.y, 10, 0, Math.PI * 2, true);
 
     this.context._2d.fill();
   };
@@ -259,7 +268,177 @@ function (_super) {
 }(Shape_1.Shape);
 
 exports.Circle = Circle;
-},{"./Shape":"Shape.ts"}],"app.ts":[function(require,module,exports) {
+},{"./Shape":"Shape.ts"}],"Mouse.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var Mouse =
+/** @class */
+function () {
+  function Mouse(canvas) {
+    this.canvas = canvas;
+  }
+
+  Mouse.prototype.CurrentPosition = function (event) {
+    var rect = this.canvas.element.getBoundingClientRect();
+    var root = document.documentElement;
+    var mouseX = event.clientX - rect.left - root.scrollLeft;
+    var mouseY = event.clientY - rect.top - root.scrollTop;
+    return {
+      x: mouseX,
+      y: mouseY
+    };
+  };
+
+  return Mouse;
+}();
+
+exports.Mouse = Mouse;
+},{}],"ScreenText.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var ScreenText =
+/** @class */
+function () {
+  function ScreenText(text, position, context) {
+    this.text = text;
+    this.position = position;
+    this.context = context;
+  }
+
+  ScreenText.prototype.Draw = function () {
+    this.context._2d.fillText(this.text, this.position.x, this.position.y);
+  };
+
+  return ScreenText;
+}();
+
+exports.ScreenText = ScreenText;
+},{}],"Player.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var Player =
+/** @class */
+function () {
+  function Player(score) {
+    if (score === void 0) {
+      score = 0;
+    }
+
+    this.score = score;
+    this.score = score;
+  }
+
+  Player.prototype.ScoreAdd = function (score) {
+    this.score += score;
+  };
+
+  Player.prototype.ScoreGet = function () {
+    return this.score;
+  };
+
+  Player.prototype.ScoreReset = function (limit) {
+    if (this.score === limit) {
+      this.score = 0;
+    }
+  };
+
+  return Player;
+}();
+
+exports.Player = Player;
+},{}],"Playground.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var Playground =
+/** @class */
+function () {
+  function Playground(context) {
+    this.context = context;
+    this.shapeList = [];
+  }
+
+  Playground.prototype.AddShape = function (shape) {
+    this.shapeList.push(shape);
+  };
+
+  Playground.prototype.CrasNotify = function () {
+    for (var _i = 0, _a = this.shapeList; _i < _a.length; _i++) {
+      var shape = _a[_i];
+      this.crash(shape);
+    }
+  };
+
+  Playground.prototype.crash = function (shape) {
+    this.crashRightWall(shape);
+    this.crashFloor(shape);
+    this.crashLeftWall(shape);
+    this.crashTop(shape);
+  };
+
+  Playground.prototype.noCrash = function (shape) {
+    return {
+      SpeedX: shape.speed.SpeedX,
+      SpeedY: shape.speed.SpeedY
+    };
+  };
+
+  Playground.prototype.crashRightWall = function (shape) {
+    if (shape.position.x >= this.context.canvas.width) {
+      shape.Move({
+        SpeedX: -shape.speed.SpeedX,
+        SpeedY: shape.speed.SpeedY
+      });
+    }
+  };
+
+  Playground.prototype.crashLeftWall = function (shape) {
+    if (shape.position.x <= 0) {
+      shape.Move({
+        SpeedX: -shape.speed.SpeedX,
+        SpeedY: shape.speed.SpeedY
+      }); //shape.Reset();
+    }
+  };
+
+  Playground.prototype.crashFloor = function (shape) {
+    if (shape.position.y >= this.context.canvas.height) {
+      shape.Move({
+        SpeedX: shape.speed.SpeedX,
+        SpeedY: -shape.speed.SpeedY
+      });
+    }
+  };
+
+  Playground.prototype.crashTop = function (shape) {
+    if (shape.position.y <= 0) {
+      shape.Move({
+        SpeedX: shape.speed.SpeedX,
+        SpeedY: -shape.speed.SpeedY
+      });
+    }
+  };
+
+  return Playground;
+}();
+
+exports.Playground = Playground;
+},{}],"app.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -272,62 +451,174 @@ var context_1 = require("./context");
 
 var Circle_1 = require("./Circle");
 
+var Mouse_1 = require("./Mouse");
+
+var ScreenText_1 = require("./ScreenText");
+
+var Player_1 = require("./Player");
+
+var Playground_1 = require("./Playground");
+
 var cl = console.log;
 
 if (false) {
   console.log = function () {};
 }
 
+var PADDLE_HEIGHT = 100;
+var PADDLE_THICKNESS = 20;
+var player1 = new Player_1.Player(0);
+var player2 = new Player_1.Player(0);
+var WINNING_SCORE = 3;
 var ballX = 100;
 var ballSpeedX = 8;
 var ballY = 100;
 var ballSpeedY = 4;
+var canvas = new context_1.Canvas("gameCanvas", 800, 600);
+var context = new context_1.Context(canvas);
+var mouse = new Mouse_1.Mouse(canvas);
+
+function calculateMousePosition(evt) {
+  var rect = canvas.element.getBoundingClientRect();
+  var root = document.documentElement;
+  var mouseX = evt.clientX - rect.left - root.scrollLeft;
+  var mouseY = evt.clientY - rect.top - root.scrollTop;
+  return {
+    x: mouseX,
+    y: mouseY
+  };
+}
+
+var paddle1Y = 200;
+var paddle2Y = 200;
+var playgrund = new Playground_1.Playground(context);
+var player1Score = new ScreenText_1.ScreenText(player1.ScoreGet().toString(), {
+  x: 100,
+  y: 100
+}, context);
+var player2Score = new ScreenText_1.ScreenText(player2.ScoreGet().toString(), {
+  x: canvas.width - 100,
+  y: 100
+}, context);
 
 window.onload = function () {
-  var canvas = new context_1.Canvas("gameCanvas", 800, 600);
-  var context = new context_1.Context(canvas);
   var rectagle = new Shape_1.Shape(10, 10, "white", context);
-  rectagle.Positon(ballX, 200);
-  var circle = new Circle_1.Circle(10, 10, "red", context);
-  circle.Positon(0, 150);
+  rectagle.Positon({
+    x: ballX,
+    y: 200
+  });
+  var ball = new Circle_1.Circle(10, 10, "red", context);
+  ball.Positon({
+    x: 0,
+    y: 150
+  });
+  ball.Move({
+    SpeedX: ballSpeedX,
+    SpeedY: ballSpeedY
+  });
+  playgrund.AddShape(ball);
   var framesPerSecond = 30;
   setInterval(function () {
-    drawEverything(canvas, context, circle);
-    boundary(canvas, circle);
+    drawEverything(canvas, context, ball); //playgrund.CrasNotify();
+
+    moveEverything(canvas, ball);
   }, 1000 / framesPerSecond);
-  cl('hello game world!');
+  canvas.element.addEventListener("mousemove", function (event) {
+    var mousePos = mouse.CurrentPosition(event);
+    paddle1Y = mousePos.y - PADDLE_HEIGHT / 2;
+  });
 };
 
-function boundary(canvas, shape) {
-  if (shape.x >= canvas.width) {
-    ballSpeedX = -ballSpeedX;
-  }
+function computerMovement(ball) {
+  var paddle2YCenter = paddle2Y + PADDLE_HEIGHT / 2;
 
-  if (shape.y >= canvas.height) {
-    ballSpeedY = -ballSpeedY;
-  }
-
-  if (shape.x <= 0) {
-    ballSpeedX = -ballSpeedX;
-  }
-
-  if (shape.y <= 0) {
-    ballSpeedY = -ballSpeedY;
+  if (paddle2YCenter < ball.position.y - 35) {
+    paddle2Y += 6;
+  } else if (paddle2YCenter > ball.position.y + 35) {
+    paddle2Y -= 6;
   }
 }
 
-function drawEverything(canvas, context, shape) {
-  var black = new Shape_1.Shape(canvas.width, canvas.height, "black", context);
-  black.Draw();
-  var red = new Shape_1.Shape(20, 200, "red", context);
-  red.Positon(0, 200);
-  red.Draw();
-  var white = new Shape_1.Shape(100, 200, "white", context);
-  white.Positon(300, 420);
-  white.Draw();
-  shape.Move(ballSpeedX, ballSpeedY);
+function moveEverything(canvas, ball) {
+  computerMovement(ball);
+
+  if (ball.position.x >= canvas.width) {
+    if (ball.position.y > paddle2Y && ball.position.y < paddle2Y + PADDLE_HEIGHT) {
+      //ball.Move({ SpeedX: -ball.speed.SpeedX , SpeedY: ball.speed.SpeedY });
+      var deltaY = ball.position.y - (paddle2Y + PADDLE_HEIGHT / 2);
+      ball.Move({
+        SpeedX: -ball.speed.SpeedX,
+        SpeedY: deltaY * 0.3
+      });
+    } else {
+      player1.ScoreAdd(1);
+      player1.ScoreReset(4);
+      ball.Reset();
+    }
+  }
+
+  if (ball.position.x <= 0) {
+    if (ball.position.y > paddle1Y && ball.position.y < paddle1Y + PADDLE_HEIGHT) {
+      //ball.Move({ SpeedX: -ball.speed.SpeedX , SpeedY: ball.speed.SpeedY });
+      var deltaY = ball.position.y - (paddle1Y + PADDLE_HEIGHT / 2);
+      ball.Move({
+        SpeedX: -ball.speed.SpeedX,
+        SpeedY: deltaY * 0.3
+      });
+    } else {
+      player2.ScoreAdd(1);
+      player2.ScoreReset(4);
+      ball.Reset();
+    }
+  }
+
+  if (ball.position.y >= canvas.height) {
+    ball.Move({
+      SpeedX: ball.speed.SpeedX,
+      SpeedY: -ball.speed.SpeedY
+    });
+  }
+
+  if (ball.position.y <= 0) {
+    ball.Move({
+      SpeedX: ball.speed.SpeedX,
+      SpeedY: -ball.speed.SpeedY
+    });
+  }
 }
-},{"./Shape":"Shape.ts","./context":"context.ts","./Circle":"Circle.ts"}],"../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+
+function drawEverything(canvas, context, ball) {
+  var background = new Shape_1.Shape(canvas.width, canvas.height, "black", context);
+  background.Draw(); // this is player paddle
+
+  var paddleLeft = new Shape_1.Shape(PADDLE_THICKNESS, PADDLE_HEIGHT, "red", context);
+  paddleLeft.Positon({
+    x: 0,
+    y: paddle1Y
+  });
+  paddleLeft.Draw(); // this is computer paddle
+
+  var paddleRight = new Shape_1.Shape(PADDLE_THICKNESS, PADDLE_HEIGHT, "red", context);
+  paddleRight.Positon({
+    x: canvas.width - PADDLE_THICKNESS,
+    y: paddle2Y
+  });
+  paddleRight.Draw(); // player score
+
+  var player1Score = new ScreenText_1.ScreenText(player1.ScoreGet().toString() + " pont", {
+    x: 100,
+    y: 100
+  }, context);
+  var player2Score = new ScreenText_1.ScreenText(player2.ScoreGet().toString() + " pont", {
+    x: canvas.width - 100,
+    y: 100
+  }, context);
+  player1Score.Draw();
+  player2Score.Draw(); // ball
+
+  ball.Move();
+}
+},{"./Shape":"Shape.ts","./context":"context.ts","./Circle":"Circle.ts","./Mouse":"Mouse.ts","./ScreenText":"ScreenText.ts","./Player":"Player.ts","./Playground":"Playground.ts"}],"../../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -355,7 +646,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "58219" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60179" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
@@ -531,5 +822,5 @@ function hmrAcceptRun(bundle, id) {
     return true;
   }
 }
-},{}]},{},["../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js","app.ts"], null)
+},{}]},{},["../../../../AppData/Roaming/npm/node_modules/parcel-bundler/src/builtins/hmr-runtime.js","app.ts"], null)
 //# sourceMappingURL=/app.c61986b1.js.map
